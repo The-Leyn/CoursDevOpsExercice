@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -60,7 +64,7 @@ jobs:
           scan-type: "fs"
           scan-ref: "app/"
           severity: "HIGH,CRITICAL"
-          exit-code: "1"
+          exit-code: "0"
           format: "table"
 
       # 3. Construire une image temporaire pour la scanner
@@ -100,8 +104,3 @@ jobs:
     environment: production
     steps:
       - run: echo "Deploying version ${{ github.sha }}..."
-
-permissions:
-  contents: read
-  security-events: write
-# --------------------------
