@@ -78,8 +78,8 @@ jobs:
           image-ref: "devops-app:scan"
           severity: "HIGH,CRITICAL"
           exit-code: "0"
-          format: "sarif"
-          output: "trivy-results.sarif"
+          format: "table" # <-- On force l'affichage texte
+          # (Supprime la ligne 'output: "trivy-results.sarif"')
 
       # 5. Upload SARIF pour l'onglet GitHub Security
       - name: Upload Trivy scan results
