@@ -81,14 +81,7 @@ jobs:
           format: "table" # <-- On force l'affichage texte
           # (Supprime la ligne 'output: "trivy-results.sarif"')
 
-      # 5. Upload SARIF pour l'onglet GitHub Security
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
-
-      # 6. Scanner l'IaC (Terraform)
+      # 5. Scanner l'IaC (Terraform)
       - name: Scan IaC
         uses: aquasecurity/trivy-action@0.35.0
         with:
