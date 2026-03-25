@@ -1,0 +1,102 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
+      - run: cd app && npm ci
+      - name: Run tests
+        run: |
+          cd app
+          set -o pipefail
+          npm test 2>&1 | tee test-output.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-output-node-${{ matrix.node-version }}
+          path: app/test-output.txt
+
+  build:
+    needs: test
+    uses: ./.github/workflows/reusable-docker.yml
+    with:
+      image-name: devops-app
+      context: ./app
+
+  security:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # L'action checkout classique, avec un fetch-depth: 0 (optionnel mais recommandé pour Gitleaks)
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 1. Détection de secrets (Étape 4)
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Scanner les dépendances (Ton étape actuelle mise à jour)
+      - name: Scan dependencies
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: "fs"
+          scan-ref: "app/"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          format: "table"
+
+      # 3. Construire une image temporaire pour la scanner
+      - name: Build image for scanning
+        run: docker build -t devops-app:scan app/
+
+      # 4. Scanner l'image Docker
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: "devops-app:scan"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      # 5. Upload SARIF pour l'onglet GitHub Security
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      # 6. Scanner l'IaC (Terraform)
+      - name: Scan IaC
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: "config"
+          scan-ref: "infra/"
+          severity: "HIGH,CRITICAL"
+          exit-code: "0"
+
+  deploy:
+    needs: [build, security]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: echo "Deploying version ${{ github.sha }}..."
