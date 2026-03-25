@@ -100,3 +100,8 @@ jobs:
     environment: production
     steps:
       - run: echo "Deploying version ${{ github.sha }}..."
+
+permissions:
+  contents: read
+  security-events: write
+# --------------------------

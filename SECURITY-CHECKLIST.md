@@ -6,7 +6,7 @@
 - [ ] Pas de tag :latest
 - [ ] User non-root
 - [ ] HEALTHCHECK présent
-- [ ] Scan Trivy sans vulnérabilité critique
+- [x] Scan Trivy sans vulnérabilité critique
 - [ ] .dockerignore complet
 
 ## Kubernetes
@@ -22,7 +22,7 @@
 - [ ] Secrets dans GitHub Secrets (pas dans le code)
 - [ ] Scan de dépendances automatique
 - [ ] Scan d'image automatique
-- [ ] Détection de secrets (gitleaks)
+- [x] Détection de secrets (gitleaks)
 - [ ] Environnements avec protection
 
 ## Infrastructure
